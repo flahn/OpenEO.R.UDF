@@ -4,6 +4,7 @@ json2stars_array = function(json) {
   
   arr = abind(band=json$data$raster_collection_tiles$data,along=0)
   
+  # TODO this only applies for one case, but what if the time dimension is dropped and/or band?
   # rearrange dim order
   arr_new = aperm(arr,c(4,3,2,1))
   
@@ -92,4 +93,20 @@ stars2json.raster_collection_tiles = function(stars_obj) {
     proj=srs,
     raster_collection_tiles=bands
   ))
+}
+
+parquet2stars = function(parquet) {
+  
+  # arrange is time consuming
+  parquet %<>% dplyr::select(x,y,time,band,value) %>% dplyr::arrange(time,band,y,x)
+  
+  
+  cube = base::array(parquet$value)
+  dim(cube) = c(unique(parquet$x) %>% length,
+                unique(parquet$y) %>% length,
+                unique(parquet$time) %>% length,
+                unique(parquet$band) %>% length)
+  names(dim(cube)) = c("x","y","time", "band")
+  
+  return(st_as_stars(cube))
 }
